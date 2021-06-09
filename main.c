@@ -81,12 +81,30 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 		memcpy(&moveRequestPayload, packet->payload, packet->header.length);
 
 		
-		if (moveRequestPayload.x < 0 && moveRequestPayload.y < 0) {
-			moveResponsePayload.angle = 3.14f/4;	
+		static uint16_t lowestFoodNo = 0;
+		static float desiredFoodX = 0.0;
+		static float desiredFoodY = 0.0;
+		static float tempDistance = 0.0;
+		static float lowestDistance = 999999999.0;
+
+		// check what food we want to take
+		for (int i = 0; i < AMCOM_MAX_FOOD_UPDATES; ++i) {
+			// check if food is available
+			if (foodUpdateRequestPayload.foodState[i].state == 1) {
+				// if it is, calculate distance between player and food
+				tempDistance = distance(foodUpdateRequestPayload.foodState[i].x, foodUpdateRequestPayload.foodState[i].x, 
+										moveRequestPayload.x, moveRequestPayload.y);
+				if (tempDistance < lowestDistance) {
+					lowestDistance = tempDistance;
+					lowestFoodNo = foodUpdateRequestPayload.foodState[i].foodNo;
+					desiredFoodX = foodUpdateRequestPayload.foodState[i].x;
+					desiredFoodY = foodUpdateRequestPayload.foodState[i].y;
+				}
+			}
 		}
-		else {
-			moveResponsePayload.angle = -3.14f/4;
-		}
+
+		// check angle of the food we want to grab
+		moveResponsePayload.angle = angle(desiredFoodX, desiredFoodY, moveRequestPayload.x, moveRequestPayload.y);
 
 		// wysyłamy mu kąt
 		bytesToSend = AMCOM_Serialize(AMCOM_MOVE_RESPONSE, &moveResponsePayload, sizeof(AMCOM_MoveResponsePayload), amcomBuf);
