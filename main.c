@@ -79,8 +79,8 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 			memcpy(&foodUpdateRequestPayload, packet->payload, packet->header.length);
 			isFirstCall = false;
 		} else {
-			for (int i = 0; i < AMCOM_MAX_FOOD_UPDATES; ++i) {
-				memcpy(&tempFood, packet->payload, packet->header.length);
+			for (int i = 0; i < packet->header.length/11; ++i) {
+				memcpy(&tempFood, packet->payload + (i*11), packet->header.length);
 				for (int j = 0; j < AMCOM_MAX_FOOD_UPDATES; ++j) {
 					if (tempFood.foodState->foodNo != foodUpdateRequestPayload.foodState->foodNo) {
 						foodUpdateRequestPayload.foodState[j] = *tempFood.foodState;
