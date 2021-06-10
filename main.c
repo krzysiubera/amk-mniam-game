@@ -13,16 +13,16 @@
 
 #define DEFAULT_TCP_PORT 	"2001"
 
-float distance(float x_food, float y_food, float x_player, float y_player) {
+float distance(float x_food, float y_food, float x_player, float y_player)
+{
 	float dist = ((x_player-x_food)*(x_player-x_food)) + ((y_player-y_food)*(y_player-y_food));
 	return sqrt(dist);
 }
 
-float angle(float x_food, float y_food, float x_player, float y_player) {
+float angle(float x_food, float y_food, float x_player, float y_player)
+{
 	return atan2(y_player - y_food, x_player - x_food) * 180 / 3.14f;
 }
-
-
 
 /**
  * This function will be called each time a valid AMCOM packet is received
@@ -41,7 +41,7 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 	static AMCOM_FoodUpdateRequestPayload tempFood;
 	static AMCOM_MoveRequestPayload moveRequestPayload;
 
-	bool isFirstCall = true;
+	static bool isFirstCall = true;
 
 
 	switch (packet->header.type) {
@@ -75,15 +75,22 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 		// TODO: use the received information
 
 		// ładujemy informacje o food update
-		if (isFirstCall == true) {
+		if (isFirstCall == true) 
+		{
 			memcpy(&foodUpdateRequestPayload, packet->payload, packet->header.length);
 			isFirstCall = false;
-		} else {
-			for (int i = 0; i < packet->header.length/11; ++i) {
-				memcpy(&tempFood, packet->payload + (i*11), packet->header.length);
-				for (int j = 0; j < AMCOM_MAX_FOOD_UPDATES; ++j) {
-					if (tempFood.foodState->foodNo != foodUpdateRequestPayload.foodState->foodNo) {
-						foodUpdateRequestPayload.foodState[j] = *tempFood.foodState;
+		} 
+		else 
+		{
+			memcpy(&tempFood, packet->payload, packet->header.length);
+			for (int i = 0; i < (packet->header.length / 11); ++i)
+			{
+				for (int j = 0; j < AMCOM_MAX_FOOD_UPDATES; ++j)
+				{
+					if (tempFood.foodState[i].foodNo == foodUpdateRequestPayload.foodState[j].foodNo)
+					{
+						memcpy(&foodUpdateRequestPayload.foodState[j], &tempFood.foodState[i], 11);
+						break;
 					}
 				}
 			}
@@ -103,9 +110,11 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 		static float lowestDistance = 999999999.0;
 
 		// check what food we want to take
-		for (int i = 0; i < AMCOM_MAX_FOOD_UPDATES; ++i) {
-			// check if food is available
+		for (int i = 0; i < AMCOM_MAX_FOOD_UPDATES; ++i) 
+		{
+			// check if food is available	
 			if (foodUpdateRequestPayload.foodState[i].state == 1) {
+				
 				// if it is, calculate distance between player and food
 				tempDistance = distance(foodUpdateRequestPayload.foodState[i].x, foodUpdateRequestPayload.foodState[i].x, 
 										moveRequestPayload.x, moveRequestPayload.y);
@@ -115,11 +124,12 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 					desiredFoodX = foodUpdateRequestPayload.foodState[i].x;
 					desiredFoodY = foodUpdateRequestPayload.foodState[i].y;
 				}
+				moveResponsePayload.angle = angle(foodUpdateRequestPayload.foodState[i].x, foodUpdateRequestPayload.foodState[i].y, moveRequestPayload.x, moveRequestPayload.y);
 			}
 		}
 
 		// check angle of the food we want to grab
-		moveResponsePayload.angle = angle(desiredFoodX, desiredFoodY, moveRequestPayload.x, moveRequestPayload.y);
+		
 
 		// wysyłamy mu kąt
 		bytesToSend = AMCOM_Serialize(AMCOM_MOVE_RESPONSE, &moveResponsePayload, sizeof(AMCOM_MoveResponsePayload), amcomBuf);
