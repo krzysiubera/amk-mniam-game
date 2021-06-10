@@ -5,6 +5,7 @@
 #include <ws2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "amcom.h"
 #include "amcom_packets.h"
@@ -37,7 +38,10 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 	static AMCOM_MoveResponsePayload moveResponsePayload;			
 	static AMCOM_PlayerUpdateRequestPayload playerUpdateRequestPayload;	
 	static AMCOM_FoodUpdateRequestPayload foodUpdateRequestPayload;	
+	static AMCOM_FoodUpdateRequestPayload tempFood;
 	static AMCOM_MoveRequestPayload moveRequestPayload;
+
+	bool isFirstCall = true;
 
 
 	switch (packet->header.type) {
@@ -71,8 +75,19 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 		// TODO: use the received information
 
 		// ładujemy informacje o food update
-		memcpy(&foodUpdateRequestPayload, packet->payload, packet->header.length);
-		
+		if (isFirstCall == true) {
+			memcpy(&foodUpdateRequestPayload, packet->payload, packet->header.length);
+			isFirstCall = false;
+		} else {
+			for (int i = 0; i < AMCOM_MAX_FOOD_UPDATES; ++i) {
+				memcpy(&tempFood, packet->payload, packet->header.length);
+				for (int j = 0; j < AMCOM_MAX_FOOD_UPDATES; ++j) {
+					if (tempFood.foodState->foodNo != foodUpdateRequestPayload.foodState->foodNo) {
+						foodUpdateRequestPayload.foodState[j] = *tempFood.foodState;
+					}
+				}
+			}
+		}
 
 		break;
 	case AMCOM_MOVE_REQUEST:
