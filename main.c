@@ -21,7 +21,12 @@ float distance(float x_food, float y_food, float x_player, float y_player)
 
 float angle(float x_food, float y_food, float x_player, float y_player)
 {
-	return atan2(y_player - y_food, x_player - x_food) * 180 / 3.14f;
+	return atan2(y_player - y_food, x_player - x_food)*180/3.14f;
+}
+
+int comparator(const void* a, const void* b)
+{
+	return ( *(float*) a - *(float*)b);
 }
 
 /**
@@ -42,7 +47,10 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 	static AMCOM_MoveRequestPayload moveRequestPayload;
 
 	static bool isFirstCall = true;
-
+	static float tempDistance;
+	static float lowDistance;
+	static float posX;
+	static float posY;
 
 	switch (packet->header.type) {
 	case AMCOM_IDENTIFY_REQUEST:
@@ -103,33 +111,31 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 		memcpy(&moveRequestPayload, packet->payload, packet->header.length);
 
 		
-		static uint16_t lowestFoodNo = 0;
-		static float desiredFoodX = 0.0;
-		static float desiredFoodY = 0.0;
-		static float tempDistance = 0.0;
-		static float lowestDistance = 999999999.0;
+		lowDistance = distance(foodUpdateRequestPayload.foodState[0].x, foodUpdateRequestPayload.foodState[0].y, 
+													moveRequestPayload.x, moveRequestPayload.y);
+		posX = foodUpdateRequestPayload.foodState[0].x;
+		posY = foodUpdateRequestPayload.foodState[0].y;
 
-		// check what food we want to take
-		for (int i = 0; i < AMCOM_MAX_FOOD_UPDATES; ++i) 
+		// create lookup table with distances
+		for (int i = 0; i < AMCOM_MAX_FOOD_UPDATES; ++i)
 		{
-			// check if food is available	
-			if (foodUpdateRequestPayload.foodState[i].state == 1) {
-				
-				// if it is, calculate distance between player and food
-				tempDistance = distance(foodUpdateRequestPayload.foodState[i].x, foodUpdateRequestPayload.foodState[i].x, 
-										moveRequestPayload.x, moveRequestPayload.y);
-				if (tempDistance < lowestDistance) {
-					lowestDistance = tempDistance;
-					lowestFoodNo = foodUpdateRequestPayload.foodState[i].foodNo;
-					desiredFoodX = foodUpdateRequestPayload.foodState[i].x;
-					desiredFoodY = foodUpdateRequestPayload.foodState[i].y;
+			
+			if (foodUpdateRequestPayload.foodState[i].state == 1)
+			{
+				tempDistance = distance(foodUpdateRequestPayload.foodState[i].x, foodUpdateRequestPayload.foodState[i].y, 
+													moveRequestPayload.x, moveRequestPayload.y);
+				if (tempDistance <= lowDistance)
+				{
+					lowDistance = tempDistance;
+					posX = foodUpdateRequestPayload.foodState[i].x;
+					posY =  foodUpdateRequestPayload.foodState[i].y;
 				}
-				moveResponsePayload.angle = angle(foodUpdateRequestPayload.foodState[i].x, foodUpdateRequestPayload.foodState[i].y, moveRequestPayload.x, moveRequestPayload.y);
 			}
 		}
 
-		// check angle of the food we want to grab
 		
+		moveResponsePayload.angle = angle(posX, posY, moveRequestPayload.x, moveRequestPayload.y);
+
 
 		// wysyłamy mu kąt
 		bytesToSend = AMCOM_Serialize(AMCOM_MOVE_RESPONSE, &moveResponsePayload, sizeof(AMCOM_MoveResponsePayload), amcomBuf);
