@@ -15,13 +15,17 @@
 
 float distance(float x_food, float y_food, float x_player, float y_player)
 {
-	float dist = ((x_player-x_food)*(x_player-x_food)) + ((y_player-y_food)*(y_player-y_food));
-	return sqrt(dist);
+	static float dist;
+	dist = ((x_player-x_food)*(x_player-x_food)) + ((y_player-y_food)*(y_player-y_food));
+	dist =  sqrt(dist);
+	return dist;
 }
 
 float angle(float x_food, float y_food, float x_player, float y_player)
 {
-	return atan2(y_player - y_food, x_player - x_food)*180/3.14f;
+	static float ang;
+	ang =  atan2(y_player - y_food, x_player - x_food)*180/3.14f;
+	return ang;
 }
 
 int comparator(const void* a, const void* b)
