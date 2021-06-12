@@ -112,9 +112,9 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 		memcpy(&moveRequestPayload, packet->payload, packet->header.length);
 
 		// unrealistic values
-		lowDistance = 99999999;
-		posX = -10000;
-		posY = -10000;
+		lowDistance = 999999999999.0;
+		posX = -100000000.0;
+		posY = -100000000.0;
 
 		// create lookup table with distances
 		for (int i = 0; i < AMCOM_MAX_FOOD_UPDATES; ++i)
