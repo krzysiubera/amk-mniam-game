@@ -13,7 +13,7 @@
 
 #define DEFAULT_TCP_PORT 	"2001"
 
-float distance(float x_food, float y_food, float x_player, float y_player)
+float calculateDistance(float x_food, float y_food, float x_player, float y_player)
 {
 	static float dist;
 	dist = ((x_player-x_food)*(x_player-x_food)) + ((y_player-y_food)*(y_player-y_food));
@@ -21,16 +21,13 @@ float distance(float x_food, float y_food, float x_player, float y_player)
 	return dist;
 }
 
-float angle(float x_food, float y_food, float x_player, float y_player)
+float calculateAngle(float x_food, float y_food, float x_player, float y_player)
 {
 	static float ang;
-	ang =  atan2(y_player - y_food, x_player - x_food)*180/3.14f;
+	ang = atan2(y_food - y_player, x_food - x_player);
+	if (ang < 0)
+		ang += 6.28f;
 	return ang;
-}
-
-int comparator(const void* a, const void* b)
-{
-	return ( *(float*) a - *(float*)b);
 }
 
 /**
@@ -115,7 +112,7 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 		memcpy(&moveRequestPayload, packet->payload, packet->header.length);
 
 		
-		lowDistance = distance(foodUpdateRequestPayload.foodState[0].x, foodUpdateRequestPayload.foodState[0].y, 
+		lowDistance = calculateDistance(foodUpdateRequestPayload.foodState[0].x, foodUpdateRequestPayload.foodState[0].y, 
 													moveRequestPayload.x, moveRequestPayload.y);
 		posX = foodUpdateRequestPayload.foodState[0].x;
 		posY = foodUpdateRequestPayload.foodState[0].y;
@@ -126,7 +123,7 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 			
 			if (foodUpdateRequestPayload.foodState[i].state == 1)
 			{
-				tempDistance = distance(foodUpdateRequestPayload.foodState[i].x, foodUpdateRequestPayload.foodState[i].y, 
+				tempDistance = calculateDistance(foodUpdateRequestPayload.foodState[i].x, foodUpdateRequestPayload.foodState[i].y, 
 													moveRequestPayload.x, moveRequestPayload.y);
 				if (tempDistance <= lowDistance)
 				{
@@ -138,7 +135,7 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 		}
 
 		
-		moveResponsePayload.angle = angle(posX, posY, moveRequestPayload.x, moveRequestPayload.y);
+		moveResponsePayload.angle = calculateAngle(posX, posY, moveRequestPayload.x, moveRequestPayload.y);
 
 
 		// wysyłamy mu kąt
