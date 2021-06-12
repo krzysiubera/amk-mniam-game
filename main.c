@@ -99,7 +99,7 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 					if (tempFood.foodState[i].foodNo == foodUpdateRequestPayload.foodState[j].foodNo)
 					{
 						memcpy(&foodUpdateRequestPayload.foodState[j], &tempFood.foodState[i], 11);
-						break;
+						//break;
 					}
 				}
 			}
@@ -111,11 +111,10 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 		// TODO: respond with MOVE.confirmation
 		memcpy(&moveRequestPayload, packet->payload, packet->header.length);
 
-		
-		lowDistance = calculateDistance(foodUpdateRequestPayload.foodState[0].x, foodUpdateRequestPayload.foodState[0].y, 
-													moveRequestPayload.x, moveRequestPayload.y);
-		posX = foodUpdateRequestPayload.foodState[0].x;
-		posY = foodUpdateRequestPayload.foodState[0].y;
+		// unrealistic values
+		lowDistance = 99999999;
+		posX = -10000;
+		posY = -10000;
 
 		// create lookup table with distances
 		for (int i = 0; i < AMCOM_MAX_FOOD_UPDATES; ++i)
