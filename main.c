@@ -39,7 +39,7 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 	static int playerCounter;					// just a counter to distinguish player instances
 	SOCKET sock = (SOCKET)userContext;			// socket used for communication with the game client
 
-	// dopisane przeze mnie
+	// written by me
 	static AMCOM_NewGameRequestPayload newGameRequestPayload;		
 	static AMCOM_MoveResponsePayload moveResponsePayload;			
 	static AMCOM_PlayerUpdateRequestPayload playerUpdateRequestPayload;	
@@ -52,6 +52,12 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 	static float lowDistance;
 	static float posX;
 	static float posY;
+	static bool isAnyFoodLeft = false;
+	static float rivalPosX;
+	static float rivalPosY;
+	static float tempRivalDistance;
+	static float closestRivalDistance;
+	static uint16_t closestRivalHp;
 
 	switch (packet->header.type) {
 	case AMCOM_IDENTIFY_REQUEST:
@@ -74,7 +80,7 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 		printf("Got PLAYER_UPDATE.request.\n");
 		// TODO: use the received information
 		
-		// ładujemy informacje o player update
+		// load information about player update
 		memcpy(&playerUpdateRequestPayload, packet->payload, packet->header.length);
 		
 
@@ -116,7 +122,7 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 		posX = -100000000.0;
 		posY = -100000000.0;
 
-		// create lookup table with distances
+		// check distances to food
 		for (int i = 0; i < AMCOM_MAX_FOOD_UPDATES; ++i)
 		{
 			
@@ -129,18 +135,49 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 					lowDistance = tempDistance;
 					posX = foodUpdateRequestPayload.foodState[i].x;
 					posY =  foodUpdateRequestPayload.foodState[i].y;
+					isAnyFoodLeft = true;
 				}
 			}
 		}
 
+		closestRivalHp = 0;
+		// if there is any player left, send the angle
+		if (isAnyFoodLeft)
+		{
+			moveResponsePayload.angle = calculateAngle(posX, posY, moveRequestPayload.x, moveRequestPayload.y);	
+		}
+		// if there is no food left
+		else
+		{
+			// find the closest player
+			rivalPosX = 99999999.0;
+			rivalPosY = 99999999.0;
+			closestRivalDistance = 999999.0;
+
+			for (int i = 0; i < AMCOM_MAX_PLAYER_UPDATES; ++i)
+			{
+				tempRivalDistance = calculateDistance(playerUpdateRequestPayload.playerState[i].x, playerUpdateRequestPayload.playerState[i].y, 
+										moveRequestPayload.x, moveRequestPayload.y);
+				if (tempRivalDistance <= closestRivalDistance)
+				{
+					closestRivalDistance = tempRivalDistance;
+					rivalPosX = playerUpdateRequestPayload.playerState[i].x;
+					rivalPosY = playerUpdateRequestPayload.playerState[i].y;
+					closestRivalHp = playerUpdateRequestPayload.playerState[i].hp;
+				}
+			}
+			// run away from him
+			moveResponsePayload.angle = calculateAngle(posX, posY, rivalPosX, rivalPosY);
+			
+		}
 		
-		moveResponsePayload.angle = calculateAngle(posX, posY, moveRequestPayload.x, moveRequestPayload.y);
 
 
-		// wysyłamy mu kąt
+		// send angle to game
 		bytesToSend = AMCOM_Serialize(AMCOM_MOVE_RESPONSE, &moveResponsePayload, sizeof(AMCOM_MoveResponsePayload), amcomBuf);
-
+		isAnyFoodLeft = false;
 		break;
+
 	}
 
 	if (bytesToSend > 0) {
