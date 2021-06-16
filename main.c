@@ -30,6 +30,53 @@ float calculateAngle(float x_food, float y_food, float x_player, float y_player)
 	return ang;
 }
 
+void optimalFood (AMCOM_FoodUpdateRequestPayload *foodUpdateRequestPayload, AMCOM_MoveRequestPayload *moveRequestPayload, float *posX, float *posY, bool *isAnyFoodLeft)
+{
+	// check distances to food
+	float foodDistanceToFood, tempDistance, sumOfDistances, lowestSumOfDistances = 999999999999.0;
+
+	for (int i = 0; i < AMCOM_MAX_FOOD_UPDATES; ++i)
+	{
+		if (foodUpdateRequestPayload->foodState[i].state == 1)
+		{
+			tempDistance = calculateDistance(foodUpdateRequestPayload->foodState[i].x, foodUpdateRequestPayload->foodState[i].y, 
+												moveRequestPayload->x, moveRequestPayload->y);
+
+			// Depth 2
+			// calculation of distances between food
+			for (int j = 0; j < AMCOM_MAX_FOOD_UPDATES; ++j)
+			{
+				if (foodUpdateRequestPayload->foodState[j].state == 1)
+				{
+					foodDistanceToFood = calculateDistance(foodUpdateRequestPayload->foodState[i].x, foodUpdateRequestPayload->foodState[i].y, 
+														foodUpdateRequestPayload->foodState[j].x,foodUpdateRequestPayload->foodState[j].y);
+					sumOfDistances = foodDistanceToFood + tempDistance;
+
+					if (sumOfDistances <= lowestSumOfDistances)
+					{
+						lowestSumOfDistances = sumOfDistances;
+						float distanceToSecondFood = calculateDistance(foodUpdateRequestPayload->foodState[j].x, foodUpdateRequestPayload->foodState[j].y, 
+												moveRequestPayload->x, moveRequestPayload->y);
+
+						if (tempDistance <= distanceToSecondFood)
+						{
+							*posX = foodUpdateRequestPayload->foodState[i].x;
+							*posY =  foodUpdateRequestPayload->foodState[i].y;
+							*isAnyFoodLeft = true;
+						}
+						else
+						{
+							*posX = foodUpdateRequestPayload->foodState[j].x;
+							*posY =  foodUpdateRequestPayload->foodState[j].y;
+							*isAnyFoodLeft = true;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 /**
  * This function will be called each time a valid AMCOM packet is received
  */
@@ -123,22 +170,7 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 		posY = -100000000.0;
 
 		// check distances to food
-		for (int i = 0; i < AMCOM_MAX_FOOD_UPDATES; ++i)
-		{
-			
-			if (foodUpdateRequestPayload.foodState[i].state == 1)
-			{
-				tempDistance = calculateDistance(foodUpdateRequestPayload.foodState[i].x, foodUpdateRequestPayload.foodState[i].y, 
-													moveRequestPayload.x, moveRequestPayload.y);
-				if (tempDistance <= lowDistance)
-				{
-					lowDistance = tempDistance;
-					posX = foodUpdateRequestPayload.foodState[i].x;
-					posY =  foodUpdateRequestPayload.foodState[i].y;
-					isAnyFoodLeft = true;
-				}
-			}
-		}
+		optimalFood(&foodUpdateRequestPayload, &moveRequestPayload, &posX, &posY, &isAnyFoodLeft);
 
 		closestRivalHp = 0;
 		// if there is any player left, send the angle
