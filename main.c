@@ -41,6 +41,7 @@ float intercept (float playerX, float playerY, float opponentX, float opponentY,
 	float b2 = middleY - a2*middleX;			// the equation of the line passing through the middle point (y = a2*x + b)
 	float b3 = opponentY - opponentMoveAngle*opponentX;
 
+	// http://www.math.edu.pl/punkt-przeciecia-dwoch-prostych
 	// calculating point of interception
 	float W = a2 - opponentMoveAngle;				// determinant (since B factors are equal to 1)
 	float Wx = b3 - b2;
@@ -73,6 +74,7 @@ float * interceptPoint (float playerX, float playerY, float opponentX, float opp
 	float C1 = middleY - A1*middleX;			// the equation of the line passing through the middle point (y = a2*x + b)
 	float C2 = opponentY - A2*opponentX;
 
+	// http://www.math.edu.pl/punkt-przeciecia-dwoch-prostych
 	// calculating point of interception
 	float W = A1 - A2;					// determinant (since B factors are equal to 1)
 	float Wx = C2 - C1;
