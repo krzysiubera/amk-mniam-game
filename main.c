@@ -30,6 +30,62 @@ float calculateAngle(float x_food, float y_food, float x_player, float y_player)
 	return ang;
 }
 
+float intercept (float playerX, float playerY, float opponentX, float opponentY, float opponentMoveAngle)
+{
+	float middleX = (playerX + opponentX) / 2;
+	float middleY = (playerY + opponentY) / 2;
+
+	float a1 = calculateAngle(middleX, middleY, playerX, playerY);
+	float a2 = -1 / a1;							// perpendicular line equation 
+
+	float b2 = middleY - a2*middleX;			// the equation of the line passing through the middle point (y = a2*x + b)
+	float b3 = opponentY - opponentMoveAngle*opponentX;
+
+	// calculating point of interception
+	float W = a2 - opponentMoveAngle;				// determinant (since B factors are equal to 1)
+	float Wx = b3 - b2;
+	float Wy = opponentMoveAngle*b2 - b3*a2;
+
+	float pointOfInterceptionX = Wx/W;
+	float pointOfInterceptioY  = Wy/W;
+
+	return calculateAngle(playerX, playerY, pointOfInterceptionX, pointOfInterceptioY);
+}
+
+/*
+*	Example usage:
+*	float *intercept = interceptPoint(300, 300, 400, 400, calculateAngle(300, 300, 400, 400));
+*   printf("X:   %f\nY:    %f", *intercept, *(intercept + 1));
+*
+*	@param returns pointer to array of X, Y of intercept point
+*/
+
+float * interceptPoint (float playerX, float playerY, float opponentX, float opponentY, float opponentMoveAngle)
+{
+	float middleX = (playerX + opponentX) / 2;
+	float middleY = (playerY + opponentY) / 2;
+
+	float a1 = calculateAngle(middleX, middleY, playerX, playerY);
+	
+	float A1 = -1 / a1;					// perpendicular line equation 
+    	float A2 = opponentMoveAngle;
+
+	float C1 = middleY - A1*middleX;			// the equation of the line passing through the middle point (y = a2*x + b)
+	float C2 = opponentY - A2*opponentX;
+
+	// calculating point of interception
+	float W = A1 - A2;					// determinant (since B factors are equal to 1)
+	float Wx = C2 - C1;
+	float Wy = C1*A2 - A1*C2;
+
+	static float pointOfInterception[2];
+
+	pointOfInterception[0] = Wx/W;
+	pointOfInterception[1]  = Wy/W;
+
+	return pointOfInterception;
+}
+
 void optimalFood (AMCOM_FoodUpdateRequestPayload *foodUpdateRequestPayload, AMCOM_MoveRequestPayload *moveRequestPayload, float *posX, float *posY, bool *isAnyFoodLeft)
 {
 	// check distances to food
@@ -75,6 +131,86 @@ void optimalFood (AMCOM_FoodUpdateRequestPayload *foodUpdateRequestPayload, AMCO
 			}
 		}
 	}
+}
+
+/*
+* 	This function has to consider, whether chasing player is a danger for us, should we attack, or 
+*	rather be interested in eating food.
+*	
+*	@param returns angle in radians
+*/
+
+float moveStrengthEvaluation (AMCOM_PlayerUpdateRequestPayload *playerUpdateRequestPayload, AMCOM_MoveRequestPayload *moveRequestPayload, 
+							float *posX, float *posY, bool isAnyFoodLeft)
+{
+	// find the closest player
+	float rivalPosX 				= 99999999.0;
+	float rivalPosY 				= 99999999.0;
+	float closestRivalDistance 		= 999999.0;
+	float tempRivalDistance;
+	uint16_t closestRivalHp 		= 0;
+	uint8_t closestRivalID;
+	static float playerPreviousPositionX[AMCOM_MAX_PLAYER_UPDATES];
+	static float playerPreviousPositionY[AMCOM_MAX_PLAYER_UPDATES];
+
+	for (int i = 0; i < AMCOM_MAX_PLAYER_UPDATES; ++i)
+	{
+		tempRivalDistance = calculateDistance(playerUpdateRequestPayload->playerState[i].x, playerUpdateRequestPayload->playerState[i].y, 
+								moveRequestPayload->x, moveRequestPayload->y);
+		if (tempRivalDistance <= closestRivalDistance)
+		{
+			closestRivalDistance = tempRivalDistance;
+			rivalPosX = playerUpdateRequestPayload->playerState[i].x;
+			rivalPosY = playerUpdateRequestPayload->playerState[i].y;
+			closestRivalHp = playerUpdateRequestPayload->playerState[i].hp;
+			closestRivalID = i;
+		}
+	}
+
+	for (int i = 0; i < AMCOM_MAX_PLAYER_UPDATES; ++i)
+	{
+		playerPreviousPositionX[i] = rivalPosX;
+		playerPreviousPositionY[i] = rivalPosY;
+	}
+
+	float closestRivalMoveAngle = calculateAngle(playerPreviousPositionX[closestRivalID], playerPreviousPositionY[closestRivalID], rivalPosX, rivalPosY);
+	float toOurPlayerAngle		= calculateAngle(moveRequestPayload->x, moveRequestPayload->y, rivalPosX, rivalPosY);
+
+	// run away from him
+	if (closestRivalHp > playerUpdateRequestPayload->playerState->hp)
+	{
+		// if toOurPlayerAngle is between +- 5 degree the direction of enemy player movement
+		if (toOurPlayerAngle < closestRivalMoveAngle + 0.09 && toOurPlayerAngle > closestRivalMoveAngle - 0.09)
+		{
+			if (isAnyFoodLeft)
+			{
+				// calculate optimal course if able, we want here to catch and 
+			}
+
+			else
+				return calculateAngle(*posX, *posY, rivalPosX, rivalPosY);
+		}
+		else
+		{
+			return calculateAngle(*posX, *posY, moveRequestPayload->x, moveRequestPayload->y);
+		}
+	}
+	
+	else if (closestRivalHp < playerUpdateRequestPayload->playerState->hp)
+	{
+		// evalutaion of 
+		if (isAnyFoodLeft)
+		{
+			// distance to closest food
+			// distance to closest player
+		}
+		else
+			return intercept(moveRequestPayload->x, moveRequestPayload->y, rivalPosX, rivalPosY, closestRivalMoveAngle);
+
+	}
+
+	else
+		return calculateAngle(*posX, *posY, moveRequestPayload->x, moveRequestPayload->y);
 }
 
 /**
@@ -181,25 +317,8 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 		// if there is no food left
 		else
 		{
-			// find the closest player
-			rivalPosX = 99999999.0;
-			rivalPosY = 99999999.0;
-			closestRivalDistance = 999999.0;
-
-			for (int i = 0; i < AMCOM_MAX_PLAYER_UPDATES; ++i)
-			{
-				tempRivalDistance = calculateDistance(playerUpdateRequestPayload.playerState[i].x, playerUpdateRequestPayload.playerState[i].y, 
-										moveRequestPayload.x, moveRequestPayload.y);
-				if (tempRivalDistance <= closestRivalDistance)
-				{
-					closestRivalDistance = tempRivalDistance;
-					rivalPosX = playerUpdateRequestPayload.playerState[i].x;
-					rivalPosY = playerUpdateRequestPayload.playerState[i].y;
-					closestRivalHp = playerUpdateRequestPayload.playerState[i].hp;
-				}
-			}
-			// run away from him
-			moveResponsePayload.angle = calculateAngle(posX, posY, rivalPosX, rivalPosY);
+			// calculating move response angle
+			moveResponsePayload.angle = moveStrengthEvaluation(&playerUpdateRequestPayload, &moveRequestPayload, &posX, &posY, isAnyFoodLeft);
 			
 		}
 		
