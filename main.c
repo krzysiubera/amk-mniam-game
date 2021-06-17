@@ -187,10 +187,11 @@ float moveStrengthEvaluation (AMCOM_PlayerUpdateRequestPayload *playerUpdateRequ
 			if (isAnyFoodLeft)
 			{
 				// calculate optimal course if able, we want here to catch and 
+				return calculateAngle(*posX, *posY, moveRequestPayload->x, moveRequestPayload->y);	
 			}
 
 			else
-				return calculateAngle(*posX, *posY, rivalPosX, rivalPosY);
+				return calculateAngle(moveRequestPayload->x, moveRequestPayload->y, rivalPosX, rivalPosY);
 		}
 		else
 		{
@@ -205,6 +206,9 @@ float moveStrengthEvaluation (AMCOM_PlayerUpdateRequestPayload *playerUpdateRequ
 		{
 			// distance to closest food
 			// distance to closest player
+
+			// TODO: next line should be deleted!!!
+			return intercept(moveRequestPayload->x, moveRequestPayload->y, rivalPosX, rivalPosY, closestRivalMoveAngle);
 		}
 		else
 			return intercept(moveRequestPayload->x, moveRequestPayload->y, rivalPosX, rivalPosY, closestRivalMoveAngle);
