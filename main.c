@@ -35,7 +35,7 @@ float intercept (float playerX, float playerY, float opponentX, float opponentY,
 	float middleX = (playerX + opponentX) / 2;
 	float middleY = (playerY + opponentY) / 2;
 
-	float a1 = calculateAngle(middleX, middleY, playerX, playerY);
+	float a1 = tan(calculateAngle(middleX, middleY, playerX, playerY));
 	float a2 = -1 / a1;							// perpendicular line equation 
 
 	float b2 = middleY - a2*middleX;			// the equation of the line passing through the middle point (y = a2*x + b)
@@ -66,7 +66,7 @@ float * interceptPoint (float playerX, float playerY, float opponentX, float opp
 	float middleX = (playerX + opponentX) / 2;
 	float middleY = (playerY + opponentY) / 2;
 
-	float a1 = calculateAngle(middleX, middleY, playerX, playerY);
+	float a1 = tan(calculateAngle(middleX, middleY, playerX, playerY));	// a = tan(alpha) -> slope of linear function
 	
 	float A1 = -1 / a1;					// perpendicular line equation 
     	float A2 = opponentMoveAngle;
