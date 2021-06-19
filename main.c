@@ -13,6 +13,12 @@
 
 #define DEFAULT_TCP_PORT 	"2001"
 
+struct Point
+{
+	float x;
+	float y;
+};
+
 float calculateDistance(float x_food, float y_food, float x_player, float y_player)
 {
 	static float dist;
@@ -61,7 +67,7 @@ float intercept (float playerX, float playerY, float opponentX, float opponentY,
 *	@param returns pointer to array of X, Y of intercept point
 */
 
-float * interceptPoint (float playerX, float playerY, float opponentX, float opponentY, float opponentMoveAngle)
+struct Point interceptPoint (float playerX, float playerY, float opponentX, float opponentY, float opponentMoveAngle)
 {
 	float middleX = (playerX + opponentX) / 2;
 	float middleY = (playerY + opponentY) / 2;
@@ -80,10 +86,10 @@ float * interceptPoint (float playerX, float playerY, float opponentX, float opp
 	float Wx = C2 - C1;
 	float Wy = C1*A2 - A1*C2;
 
-	static float pointOfInterception[2];
+	static struct Point pointOfInterception;
 
-	pointOfInterception[0] = Wx/W;
-	pointOfInterception[1]  = Wy/W;
+	pointOfInterception.x = Wx/W;
+	pointOfInterception.y = Wy/W;
 
 	return pointOfInterception;
 }
