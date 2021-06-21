@@ -8,7 +8,7 @@
 /// Maximum number of @ref AMCOM_PlayerState structures in a PLAYER_UPDATE.request packet
 #define AMCOM_MAX_PLAYER_UPDATES	8
 /// Maximum number of @ref AMCOM_FoodState structures in a FOOD_UPDATE.request packet
-#define AMCOM_MAX_FOOD_UPDATES		16
+#define AMCOM_MAX_FOOD_UPDATES		100
 
 /// Possible packet types
 typedef enum {
@@ -96,7 +96,7 @@ typedef struct AMPACKED {
 	AMCOM_FoodState foodState[AMCOM_MAX_FOOD_UPDATES];
 } AMCOM_FoodUpdateRequestPayload;
 // static assertion to check that the structure is indeed packed
-static_assert(176 == sizeof(AMCOM_FoodUpdateRequestPayload), "176 != sizeof(AMCOM_FoodUpdateRequestPayload)");
+static_assert(1100 == sizeof(AMCOM_FoodUpdateRequestPayload), "1100 != sizeof(AMCOM_FoodUpdateRequestPayload)");
 
 /// Structure of the MOVE.request packet payload
 typedef struct AMPACKED {
