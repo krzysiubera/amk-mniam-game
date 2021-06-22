@@ -94,7 +94,6 @@ struct Point interceptPoint (float playerX, float playerY, float opponentX, floa
 	return pointOfInterception;
 }
 
-// obsolete
 void optimalFood (AMCOM_FoodUpdateRequestPayload *foodUpdateRequestPayload, AMCOM_MoveRequestPayload *moveRequestPayload, float *posX, float *posY, bool *isAnyFoodLeft)
 {
 	// check distances to food
