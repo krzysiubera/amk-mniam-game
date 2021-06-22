@@ -94,10 +94,12 @@ struct Point interceptPoint (float playerX, float playerY, float opponentX, floa
 	return pointOfInterception;
 }
 
+// obsolete
 void optimalFood (AMCOM_FoodUpdateRequestPayload *foodUpdateRequestPayload, AMCOM_MoveRequestPayload *moveRequestPayload, float *posX, float *posY, bool *isAnyFoodLeft)
 {
 	// check distances to food
 	float foodDistanceToFood, tempDistance, sumOfDistances, lowestSumOfDistances = 999999999999.0;
+	int temp = -1;
 
 	for (int i = 0; i < AMCOM_MAX_FOOD_UPDATES; ++i)
 	{
@@ -106,6 +108,8 @@ void optimalFood (AMCOM_FoodUpdateRequestPayload *foodUpdateRequestPayload, AMCO
 			tempDistance = calculateDistance(foodUpdateRequestPayload->foodState[i].x, foodUpdateRequestPayload->foodState[i].y, 
 												moveRequestPayload->x, moveRequestPayload->y);
 
+			temp = i;		// in case that there is only 1 food left
+			
 			// Depth 2
 			// calculation of distances between food
 			for (int j = 0; j < AMCOM_MAX_FOOD_UPDATES; ++j)
@@ -136,8 +140,105 @@ void optimalFood (AMCOM_FoodUpdateRequestPayload *foodUpdateRequestPayload, AMCO
 						}
 					}
 				}
+
+				/**/
 			}
 		}
+	}
+
+	// if there is only 1 food left, no more no less
+	if (!(*isAnyFoodLeft) && temp != -1)
+	{
+		*posX = foodUpdateRequestPayload->foodState[temp].x;
+		*posY =  foodUpdateRequestPayload->foodState[temp].y;
+		*isAnyFoodLeft = true;
+	}
+}
+
+void optimalFoodCheck (AMCOM_FoodUpdateRequestPayload *foodUpdateRequestPayload, AMCOM_MoveRequestPayload *moveRequestPayload, float *posX, float *posY, bool *isAnyFoodLeft, 
+					float opponentX, float opponentY, float opponentAngle)
+{
+	// check distances to food
+	float foodDistanceToFood, tempDistance, sumOfDistances, lowestSumOfDistances = 999999999999.0;
+	int temp = -1;
+
+	for (int i = 0; i < AMCOM_MAX_FOOD_UPDATES; ++i)
+	{
+		if (foodUpdateRequestPayload->foodState[i].state == 1)
+		{
+			tempDistance = calculateDistance(foodUpdateRequestPayload->foodState[i].x, foodUpdateRequestPayload->foodState[i].y, 
+												moveRequestPayload->x, moveRequestPayload->y);
+
+			temp = i;		// in case that there is only 1 food left
+			
+			// Depth 2
+			// calculation of distances between food
+			for (int j = 0; j < AMCOM_MAX_FOOD_UPDATES; ++j)
+			{
+				if (j == i)
+					continue;
+
+				if (foodUpdateRequestPayload->foodState[j].state == 1)
+				{
+					foodDistanceToFood = calculateDistance(foodUpdateRequestPayload->foodState[i].x, foodUpdateRequestPayload->foodState[i].y, 
+														foodUpdateRequestPayload->foodState[j].x,foodUpdateRequestPayload->foodState[j].y);
+					sumOfDistances = foodDistanceToFood + tempDistance;
+
+					if (sumOfDistances <= lowestSumOfDistances)
+					{
+						lowestSumOfDistances = sumOfDistances;
+						float distanceToSecondFood = calculateDistance(foodUpdateRequestPayload->foodState[j].x, foodUpdateRequestPayload->foodState[j].y, 
+												moveRequestPayload->x, moveRequestPayload->y);
+						if (tempDistance <= distanceToSecondFood)
+						{
+							printf("1)\n");
+							// if closest player is closer to food than us and he is moving towards is, avoid (much better would)
+							float opponentAngleToOurFood = calculateAngle(foodUpdateRequestPayload->foodState[i].x, foodUpdateRequestPayload->foodState[i].y, opponentX, opponentY);
+							printf("Odleglosc: %f\nOdleglosc przewidywana: %f\n---------------\n", tempDistance, calculateDistance(foodUpdateRequestPayload->foodState[i].x, foodUpdateRequestPayload->foodState[i].y, opponentX, opponentY));
+							if (tempDistance > calculateDistance(foodUpdateRequestPayload->foodState[i].x, foodUpdateRequestPayload->foodState[i].y, opponentX, opponentY)
+								&& ((opponentAngle < opponentAngleToOurFood + 0.5) || (opponentAngle > opponentAngleToOurFood - 0.5)))
+								{
+									printf("skipped\n");
+									printf("i: %d\n", i);
+								continue;
+								}
+							printf("i: %d\n", i);
+							*posX = foodUpdateRequestPayload->foodState[i].x;
+							*posY = foodUpdateRequestPayload->foodState[i].y;
+							*isAnyFoodLeft = true;
+						}
+						else
+						{
+							printf("2)\n");
+							// if closest player is closer to food than us and he is moving towards is, avoid (much better would)
+							float opponentAngleToOurFood = calculateAngle(foodUpdateRequestPayload->foodState[j].x, foodUpdateRequestPayload->foodState[j].y, opponentX, opponentY);
+							printf("Odleglosc: %f\nOdleglosc przewidywana: %f\n---------------\n", tempDistance, calculateDistance(foodUpdateRequestPayload->foodState[j].x, foodUpdateRequestPayload->foodState[j].y, opponentX, opponentY));
+							if (tempDistance > calculateDistance(foodUpdateRequestPayload->foodState[j].x, foodUpdateRequestPayload->foodState[j].y, opponentX, opponentY)
+								&& ((opponentAngle < opponentAngleToOurFood + 0.5) || (opponentAngle > opponentAngleToOurFood - 0.5)))
+								{
+									printf("skipped\n");
+									printf("j: %d\n", j);
+								continue;
+								}
+							printf("j: %d\n", j);
+							*posX = foodUpdateRequestPayload->foodState[j].x;
+							*posY = foodUpdateRequestPayload->foodState[j].y;
+							*isAnyFoodLeft = true;
+						}
+					}
+				}
+
+				/**/
+			}
+		}
+	}
+
+	// if there is only 1 food left, no more no less
+	if (!(*isAnyFoodLeft) && temp != -1)
+	{
+		*posX = foodUpdateRequestPayload->foodState[temp].x;
+		*posY =  foodUpdateRequestPayload->foodState[temp].y;
+		*isAnyFoodLeft = true;
 	}
 }
 
@@ -149,7 +250,7 @@ void optimalFood (AMCOM_FoodUpdateRequestPayload *foodUpdateRequestPayload, AMCO
 */
 
 float moveStrengthEvaluation (AMCOM_PlayerUpdateRequestPayload *playerUpdateRequestPayload, AMCOM_MoveRequestPayload *moveRequestPayload, 
-							float *posX, float *posY, bool isAnyFoodLeft)
+							AMCOM_FoodUpdateRequestPayload *foodUpdateRequestPayload, float *posX, float *posY, bool *isAnyFoodLeft)
 {
 	// find the closest player
 	float rivalPosX 				= 99999999.0;
@@ -175,54 +276,100 @@ float moveStrengthEvaluation (AMCOM_PlayerUpdateRequestPayload *playerUpdateRequ
 		}
 	}
 
+	// prev positon initialized with 0.0000 by default
+	//float closestRivalMoveAngle = calculateAngle(playerPreviousPositionX[closestRivalID], playerPreviousPositionY[closestRivalID], rivalPosX, rivalPosY);
+	//printf("Opp: %f\nUs: %f\n", closestRivalMoveAngle, toOurPlayerAngle);
+	float toOurPlayerAngle		= calculateAngle(moveRequestPayload->x, moveRequestPayload->y, rivalPosX, rivalPosY);
+	float closestRivalMoveAngle = calculateAngle(rivalPosX, rivalPosY, playerPreviousPositionX[closestRivalID], playerPreviousPositionY[closestRivalID]);
+	//float toOurPlayerAngle		= calculateAngle(rivalPosX, rivalPosY, moveRequestPayload->x, moveRequestPayload->y);
+	
+
 	for (int i = 0; i < AMCOM_MAX_PLAYER_UPDATES; ++i)
 	{
 		playerPreviousPositionX[i] = rivalPosX;
 		playerPreviousPositionY[i] = rivalPosY;
 	}
 
-	float closestRivalMoveAngle = calculateAngle(playerPreviousPositionX[closestRivalID], playerPreviousPositionY[closestRivalID], rivalPosX, rivalPosY);
-	float toOurPlayerAngle		= calculateAngle(moveRequestPayload->x, moveRequestPayload->y, rivalPosX, rivalPosY);
+
+	//printf("X: %f\nY: %f\n", playerPreviousPositionX[closestRivalID] );
 
 	// run away from him
 	if (closestRivalHp > playerUpdateRequestPayload->playerState->hp)
 	{
-		// if toOurPlayerAngle is between +- 5 degree the direction of enemy player movement
-		if (toOurPlayerAngle < closestRivalMoveAngle + 0.09 && toOurPlayerAngle > closestRivalMoveAngle - 0.09)
+		printf("5\n");
+		// if toOurPlayerAngle is between +- 10 degree the direction of enemy player movement
+		if (toOurPlayerAngle < closestRivalMoveAngle + 0.18 && toOurPlayerAngle > closestRivalMoveAngle - 0.18)
 		{
 			if (isAnyFoodLeft)
 			{
 				// calculate optimal course if able, we want here to catch and 
+				// ToDo
+				printf("2\n");
+				optimalFoodCheck(foodUpdateRequestPayload, moveRequestPayload, posX, posY, isAnyFoodLeft, rivalPosX, rivalPosY, closestRivalMoveAngle);
 				return calculateAngle(*posX, *posY, moveRequestPayload->x, moveRequestPayload->y);	
 			}
 
 			else
+			{
+				printf("6\n");
+				optimalFoodCheck(foodUpdateRequestPayload, moveRequestPayload, posX, posY, isAnyFoodLeft, rivalPosX, rivalPosY, closestRivalMoveAngle);
 				return calculateAngle(moveRequestPayload->x, moveRequestPayload->y, rivalPosX, rivalPosY);
+			}
 		}
 		else
 		{
+			printf("1\n");
+			optimalFoodCheck(foodUpdateRequestPayload, moveRequestPayload, posX, posY, isAnyFoodLeft, rivalPosX, rivalPosY, closestRivalMoveAngle);
 			return calculateAngle(*posX, *posY, moveRequestPayload->x, moveRequestPayload->y);
 		}
 	}
 	
+	// czy to aby na pewno tak się zachowuje? Czy gracze o tym samym HP ze sobą nie mają interakcji?
+	// ToDo change
 	else if (closestRivalHp < playerUpdateRequestPayload->playerState->hp)
 	{
 		// evalutaion of 
 		if (isAnyFoodLeft)
 		{
-			// distance to closest food
-			// distance to closest player
+			float distanceToClosestFood 	= calculateDistance(*posX, *posY, moveRequestPayload->x, moveRequestPayload->y);
+			float distanceToClosestPlayer 	= calculateDistance(moveRequestPayload->x, moveRequestPayload->y, rivalPosX, rivalPosY);
 
-			// TODO: next line should be deleted!!!
-			return intercept(moveRequestPayload->x, moveRequestPayload->y, rivalPosX, rivalPosY, closestRivalMoveAngle);
+			// if closest player is closer than food
+			if (distanceToClosestPlayer < distanceToClosestFood)
+			{
+				printf("Jest jedzenie, ide do gracza\n");
+				return intercept(moveRequestPayload->x, moveRequestPayload->y, rivalPosX, rivalPosY, closestRivalMoveAngle);
+			}
+			// if food is closer
+			else
+			{
+				printf("Jest jedzenie, ide po nie\n");
+				optimalFoodCheck(foodUpdateRequestPayload, moveRequestPayload, posX, posY, isAnyFoodLeft, rivalPosX, rivalPosY, closestRivalMoveAngle);
+				return calculateAngle(*posX, *posY, moveRequestPayload->x, moveRequestPayload->y);
+			}
 		}
 		else
+		{
+			printf("Przechwytywanie gracza\n");
 			return intercept(moveRequestPayload->x, moveRequestPayload->y, rivalPosX, rivalPosY, closestRivalMoveAngle);
+		}
 
 	}
 
 	else
-		return calculateAngle(*posX, *posY, moveRequestPayload->x, moveRequestPayload->y);
+	{
+		if (isAnyFoodLeft)
+		{
+			printf("Idzie do jedzenia\n");
+			optimalFoodCheck(foodUpdateRequestPayload, moveRequestPayload, posX, posY, isAnyFoodLeft, rivalPosX, rivalPosY, closestRivalMoveAngle);
+			return calculateAngle(*posX, *posY, moveRequestPayload->x, moveRequestPayload->y);
+		}
+		else
+		{
+			printf("Przechwytywanie gracza\n");
+			return intercept(moveRequestPayload->x, moveRequestPayload->y, rivalPosX, rivalPosY, closestRivalMoveAngle);
+		}
+	}
 }
 
 /**
@@ -319,20 +466,7 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 
 		// check distances to food
 		optimalFood(&foodUpdateRequestPayload, &moveRequestPayload, &posX, &posY, &isAnyFoodLeft);
-
-		closestRivalHp = 0;
-		// if there is any player left, send the angle
-		if (isAnyFoodLeft)
-		{
-			moveResponsePayload.angle = calculateAngle(posX, posY, moveRequestPayload.x, moveRequestPayload.y);	
-		}
-		// if there is no food left
-		else
-		{
-			// calculating move response angle
-			moveResponsePayload.angle = moveStrengthEvaluation(&playerUpdateRequestPayload, &moveRequestPayload, &posX, &posY, isAnyFoodLeft);
-			
-		}
+		moveResponsePayload.angle = moveStrengthEvaluation(&playerUpdateRequestPayload, &moveRequestPayload, &foodUpdateRequestPayload, &posX, &posY, &isAnyFoodLeft);
 		
 
 
