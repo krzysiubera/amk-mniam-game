@@ -300,7 +300,7 @@ float moveStrengthEvaluation (AMCOM_PlayerUpdateRequestPayload *playerUpdateRequ
 		// if toOurPlayerAngle is between +- 10 degree the direction of enemy player movement
 		if (toOurPlayerAngle < closestRivalMoveAngle + 0.18 && toOurPlayerAngle > closestRivalMoveAngle - 0.18)
 		{
-			if (isAnyFoodLeft)
+			if (*isAnyFoodLeft)
 			{
 				// calculate optimal course if able, we want here to catch and 
 				// ToDo
@@ -329,7 +329,7 @@ float moveStrengthEvaluation (AMCOM_PlayerUpdateRequestPayload *playerUpdateRequ
 	else if (closestRivalHp < playerUpdateRequestPayload->playerState->hp)
 	{
 		// evalutaion of 
-		if (isAnyFoodLeft)
+		if (*isAnyFoodLeft)
 		{
 			float distanceToClosestFood 	= calculateDistance(*posX, *posY, moveRequestPayload->x, moveRequestPayload->y);
 			float distanceToClosestPlayer 	= calculateDistance(moveRequestPayload->x, moveRequestPayload->y, rivalPosX, rivalPosY);
@@ -358,9 +358,10 @@ float moveStrengthEvaluation (AMCOM_PlayerUpdateRequestPayload *playerUpdateRequ
 
 	else
 	{
-		if (isAnyFoodLeft)
+		if (*isAnyFoodLeft)
 		{
-			printf("Idzie do jedzenia\n");
+
+			printf("@@!!!Idzie do jedzenia\n");
 			optimalFoodCheck(foodUpdateRequestPayload, moveRequestPayload, posX, posY, isAnyFoodLeft, rivalPosX, rivalPosY, closestRivalMoveAngle);
 			return calculateAngle(*posX, *posY, moveRequestPayload->x, moveRequestPayload->y);
 		}
