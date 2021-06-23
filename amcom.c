@@ -21,6 +21,8 @@ void AMCOM_InitReceiver(AMCOM_Receiver* receiver, AMCOM_PacketHandler packetHand
         return;
     }
     
+    receiver->payloadCounter = 0;
+    receiver->receivedPacketState = AMCOM_PACKET_STATE_EMPTY;
 	receiver->packetHandler = packetHandlerCallback;
 	receiver->userContext = userContext;
 }

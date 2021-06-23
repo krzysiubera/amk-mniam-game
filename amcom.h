@@ -32,7 +32,7 @@ extern "C" {
 // Definitions for KEIL:
 
 /// Indicates that the structure shall be packed
-#define AMPACKED							__packed
+#define AMPACKED 							__attribute__((packed))
 
 #elif defined __GNUC__
 // Definitions for GCC:
@@ -52,7 +52,7 @@ typedef struct AMPACKED {
 } AMCOM_PacketHeader;
 
 // static assertion to check that the header structure is indeed packed
-static_assert(5 == sizeof(AMCOM_PacketHeader), "5 != sizeof(AMCOM_PacketHeader)");
+//static_assert(5 == sizeof(AMCOM_PacketHeader), "5 != sizeof(AMCOM_PacketHeader)");
 
 enum {
 	/// Maximum size of packet payload
@@ -68,7 +68,7 @@ typedef struct AMPACKED {
 } AMCOM_Packet;
 
 // static assertion to check that the packet structure is indeed packed
-static_assert(205 == sizeof(AMCOM_Packet), "205 != sizeof(AMCOM_Packet)");
+//static_assert(205 == sizeof(AMCOM_Packet), "205 != sizeof(AMCOM_Packet)");
 
 /**
  * Type describing a callback function that will be called when a packet is received.
