@@ -444,7 +444,11 @@ void amcomPacketHandler(const AMCOM_Packet* packet, void* userContext) {
 	case AMCOM_IDENTIFY_REQUEST:
 		;
 		AMCOM_IdentifyResponsePayload identifyResponse;
+<<<<<<< HEAD
 		sprintf(identifyResponse.playerName, "Vozdushno-desantnye voj");
+=======
+		sprintf(identifyResponse.playerName, "spetsnaz", playerCounter++);
+>>>>>>> 879873c47954c04d92807b3a54c35b8e88cf854d
 		bytesToSend = AMCOM_Serialize(AMCOM_IDENTIFY_RESPONSE, &identifyResponse, sizeof(identifyResponse), amcomBuf);
 		break;
 	case AMCOM_NEW_GAME_REQUEST:
